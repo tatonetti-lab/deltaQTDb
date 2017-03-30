@@ -28,7 +28,7 @@ from tqdm import tqdm
 
 # Define table names
 CONFIG_FILE = ""  # log-in credentials for database
-OMOP_CDM_DB = ""  # local OMOP MySQL database
+OMOP_CDM_DB = ""  # local OMOP CDM MySQL database
 DRUG_ERA = ""     # local OMOP CDM DRUG_ERA table
 CONCEPT  = ""     # local OMOP CDM CONCEPT table
 PERSON   = ""     # local OMOP CDM PERSON table
@@ -256,7 +256,7 @@ for pt in tqdm(pt2max_ecg_era):
 
 
 # Calculate median drug effect to assign swap frequency
-print "Binning drugs by (median deltaQTc)"
+print "Binning drugs by effect (median deltaQTc)"
 drug2deltas = defaultdict(list) # all deltas for a drug
 drug2change = dict() # median delta per drug
 
