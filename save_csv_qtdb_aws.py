@@ -1,5 +1,5 @@
 """
-deltaQT Database - Save Partial Database, Updated March 28,2017
+deltaQT Database - Save Partial Database, Updated March 28, 2017
 
 Copyright (C) 2017, Tatonetti Lab
 Tal Lorberbaum <tal.lorberbaum@columbia.edu>
@@ -116,8 +116,7 @@ where pt_id_era in %s
 
     cur.close()
     conn.close()
-
-    # Adapted from http://stackoverflow.com/a/898404
+    
     partial_csv = "\n".join(",".join('"'+str(element)+'"' for element in line) for line in partial_db)
 
     return partial_csv

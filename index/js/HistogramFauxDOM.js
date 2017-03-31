@@ -1,4 +1,4 @@
-// deltaQT Database - Histogram, Updated March 28,2017 
+// deltaQT Database - Histogram, Updated March 28, 2017 
 // 
 // Copyright (C) 2017, Tatonetti Lab
 // Tal Lorberbaum <tal.lorberbaum@columbia.edu>
@@ -33,7 +33,7 @@ function countBy(collection) {
   });
 
   return object;
-} // http://stackoverflow.com/a/28620395
+}
 
 var Chart = React.createClass({
     mixins: [Faux.mixins.core, Faux.mixins.anim],
@@ -48,7 +48,6 @@ var Chart = React.createClass({
     },
     
     componentDidMount: function(){
-        // From https://github.com/Olical/react-faux-dom/tree/master/examples/animate-d3-with-mixin
         // This will create a faux div and store its virtual DOM in state.chart
         var faux = this.connectFauxDOM('div', 'chart')
 
@@ -86,7 +85,6 @@ var Chart = React.createClass({
 
         const [min, max] = d3.extent(values_deltas.concat(values_overlay_deltas));
         
-        // http://stackoverflow.com/a/1684207
         const roundedMin = Math.round(min / 10) * 10,
               roundedMax = Math.round(max / 10) * 10;
         const thresholds = d3.range(roundedMin, roundedMax, 10);
@@ -196,7 +194,7 @@ var Chart = React.createClass({
         var line = d3.line()
                 .x(function(d,i) { return x( x_densities[i] ); })
                 .y(y)
-                .curve(d3.curveMonotoneX); // https://github.com/d3/d3-shape#curves
+                .curve(d3.curveMonotoneX);
         
         
         // Separate SVG for data table
@@ -338,7 +336,7 @@ var Chart = React.createClass({
             if (sexes != 'MF') {
               // Overlay
 //              debug("orig", values_overlay.length);
-              values_overlay = JSON.parse(JSON.stringify(this.props.deltas_overlay)); // deep copy (http://stackoverflow.com/a/18359187)
+              values_overlay = JSON.parse(JSON.stringify(this.props.deltas_overlay)); // deep copy
               var i = values_overlay.length;
               while (i--) {
                   if (values_overlay[i].sex != sexes) {
@@ -435,7 +433,7 @@ var Chart = React.createClass({
             var putativeDomainMax = d3.max(bins.concat(bins_overlay), function(d) { return d.value; });
             if (densities.length != 0) { // also check heights of density plots
                 // debug("checking densities max height. before:", putativeDomainMax);
-                var flattenedDensities = [].concat.apply([], line_densities); // http://stackoverflow.com/a/10865042
+                var flattenedDensities = [].concat.apply([], line_densities);
                 putativeDomainMax = d3.max( flattenedDensities.concat(putativeDomainMax) );
                 // debug("after:", putativeDomainMax);
             }
@@ -562,7 +560,7 @@ var Chart = React.createClass({
             
              .transition().duration(transitionDuration)
              .attr("transform", function(d) { return "translate(" + x(d.x0 + 0.333) + "," + y(d.value) + ")"; })
-             .select('rect') // http://stackoverflow.com/a/29737688
+             .select('rect')
              .attr("height",function(d) {return height - y(d.value);})
             
             component.animateFauxDOM(fauxDuration)
@@ -577,7 +575,7 @@ var Chart = React.createClass({
                  .transition().duration(transitionDuration)
                     .style("opacity",1)
                  .attr("transform", function(d) { return "translate(" + x(d.x0 + 0.333) + "," + y(d.value) + ")"; })
-                 .select('rect') // http://stackoverflow.com/a/29737688
+                 .select('rect')
                  .attr("height",function(d) {return height - y(d.value);})
             }
             ///////
@@ -607,8 +605,8 @@ var Chart = React.createClass({
             ///////
             
             
-            // Update legend (adapted from http://stackoverflow.com/a/24912466)
-            var colorPalette = d3.scaleOrdinal(d3.schemeSet2); // https://github.com/d3/d3-scale-chromatic#schemeSet2
+            // Update legend
+            var colorPalette = d3.scaleOrdinal(d3.schemeSet2);
             
             if (drugs.length == 0) {
                 var legendData = [];

@@ -1,5 +1,5 @@
 """
-deltaQT Database - Application, Updated March 28,2017
+deltaQT Database - Application, Updated March 28, 2017
 
 Copyright (C) 2017, Tatonetti Lab
 Tal Lorberbaum <tal.lorberbaum@columbia.edu>

@@ -1,4 +1,4 @@
-// deltaQT Database - Background Distribution, Updated March 28,2017 
+// deltaQT Database - Background Distribution, Updated March 28, 2017 
 // 
 // Copyright (C) 2017, Tatonetti Lab
 // Tal Lorberbaum <tal.lorberbaum@columbia.edu>

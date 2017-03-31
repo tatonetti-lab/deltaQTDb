@@ -1,4 +1,4 @@
-// deltaQT Database - Drug Omnibar, Updated March 28,2017 
+// deltaQT Database - Drug Omnibar, Updated March 28, 2017 
 // 
 // Copyright (C) 2017, Tatonetti Lab
 // Tal Lorberbaum <tal.lorberbaum@columbia.edu>
@@ -75,7 +75,7 @@ class DrugSelect extends React.Component {
             var api_call = '/api/v1/query?drugs='+entries;
             debug(api_call);
             
-            request = fetch(api_call) // http://stackoverflow.com/a/41059178
+            request = fetch(api_call)
                 .then(function(response) {
                     // Convert to JSON
                     return response.json();
@@ -121,7 +121,7 @@ class DrugSelect extends React.Component {
     
     toggleMales () {
 		this.setState({
-			males: !this.state.males // http://stackoverflow.com/a/40408976
+			males: !this.state.males
         }, () => { this.props.onSexChange(this.state.males, this.state.females); } );
 	}
     toggleFemales () {

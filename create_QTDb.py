@@ -1,5 +1,5 @@
 """
-deltaQT Database creation script, Updated March 28,2017
+deltaQT Database creation script, Updated March 28, 2017
 
 Copyright (C) 2017, Tatonetti Lab
 Tal Lorberbaum <tal.lorberbaum@columbia.edu>
@@ -32,7 +32,7 @@ OMOP_CDM_DB = ""  # local OMOP CDM MySQL database
 DRUG_ERA = ""     # local OMOP CDM DRUG_ERA table
 CONCEPT  = ""     # local OMOP CDM CONCEPT table
 PERSON   = ""     # local OMOP CDM PERSON table
-ECG_QTC  = ""     # local ECG table (see line 132)
+ECG_QTC  = ""     # local ECG table (see line 146)
 
 print "Creating deltaQT Database..."
 
@@ -339,8 +339,8 @@ for swap_drug in tqdm(drug2num_swap.keys()):
     
     # Randomly choose `num_swap` eras to swap without replacement
     pt_w_drug_to_remove_arr = np.array(list(pt_w_drug_to_remove))
-    idx = np.random.choice(len(pt_w_drug_to_remove_arr), size=num_swap, replace=False) # http://stackoverflow.com/a/23446047
-    eras_to_remove[swap_drug] = list(map(tuple, pt_w_drug_to_remove_arr[idx])) # http://stackoverflow.com/a/10016379
+    idx = np.random.choice(len(pt_w_drug_to_remove_arr), size=num_swap, replace=False)
+    eras_to_remove[swap_drug] = list(map(tuple, pt_w_drug_to_remove_arr[idx]))
     
     pt_wo_drug_to_add_arr = np.array(list( pt_wo_drug_to_add ))
     idx = np.random.choice(len(pt_wo_drug_to_add_arr), size=num_swap, replace=False)
