@@ -1,3 +1,23 @@
+/* 
+deltaQT Database - table creation and loading queries
+Updated March 28, 2017
+
+Copyright (C) 2017, Tatonetti Lab
+Tal Lorberbaum <tal.lorberbaum@columbia.edu>
+Nicholas P. Tatonetti <nick.tatonetti@columbia.edu>
+All rights reserved.
+
+Released under a CC BY-NC-SA 4.0 license.
+For full license details see LICENSE.txt or go to:
+http://creativecommons.org/licenses/by-nc-sa/4.0/
+
+-------------------------------------------------------
+Run `create_QTDb.py` to generate 3 output CSV files.
+Then use these queries to create the 3 deltaQTDb MySQL
+tables and load the data. See www.deltaqt.org for more
+information about the database.
+*/
+
 # Drug table
 CREATE TABLE `Drug` (
   `drug_concept_id` int(11) unsigned NOT NULL,
