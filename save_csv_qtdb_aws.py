@@ -1,5 +1,5 @@
 """
-deltaQT Database - Save Partial Database, Updated March 28, 2017
+deltaQT Database - Save Partial Database, Updated July 18, 2017
 
 Copyright (C) 2017, Tatonetti Lab
 Tal Lorberbaum <tal.lorberbaum@columbia.edu>
@@ -34,7 +34,7 @@ def gen_partial_db(drugs):
         else:
             drug_select = '='
 
-        SQL = '''select pm.pt_id_era, pm.pt_id #, pm.age, pm.sex, pm.race, pm.num_drugs, pm.pre_qt_500, pm.post_qt_500, pm.delta_qt
+        SQL = '''select pm.pt_id_era, pm.pt_id
 from qtdb.Patient{suffix} pm
 join
     (select pt_id, 
@@ -45,7 +45,7 @@ join
 
 
     else:
-        SQL = '''select pm.pt_id_era, pm.pt_id #, pm.age, pm.sex, pm.race, pm.num_drugs, pm.pre_qt_500, pm.post_qt_500, pm.delta_qt
+        SQL = '''select pm.pt_id_era, pm.pt_id
 from qtdb.Patient{suffix} pm
 join
     (select pt_id, 
@@ -96,7 +96,8 @@ and pm.delta_qt = m.max_delta;'''
         return "Too many patients"
 
     # Query to get all data
-    SQL = '''select pt_id_era, pt_id, era, age, sex, race, num_drugs, drug_concept_id, drug_name, pre_qt_500, post_qt_500, delta_qt
+    SQL = '''select pt_id_era, pt_id, era, age, sex, race, num_drugs, drug_concept_id, drug_name, pre_qt_500, post_qt_500, delta_qt,
+electrolyte_imbalance, cardiac_comorbidity
 from Patient
 join Patient2Drug using (pt_id_era)
 join Drug using (drug_concept_id)
@@ -106,7 +107,8 @@ where pt_id_era in %s
     cur.execute(SQL)
     results = cur.fetchall()
 
-    header = ['pt_id_era', 'pt_id', 'era', 'age', 'sex', 'race', 'num_drugs', 'drug_concept_id', 'drug_name', 'pre_qt_500', 'post_qt_500', 'delta_qt']
+    header = ['pt_id_era', 'pt_id', 'era', 'age', 'sex', 'race', 'num_drugs', 'drug_concept_id', 'drug_name',
+              'pre_qt_500', 'post_qt_500', 'delta_qt', 'electrolyte_imbalance', 'cardiac_comorbidity']
     
     partial_db = []
     partial_db.append(header)
@@ -116,7 +118,8 @@ where pt_id_era in %s
 
     cur.close()
     conn.close()
-    
+
+    # Adapted from http://stackoverflow.com/a/898404
     partial_csv = "\n".join(",".join('"'+str(element)+'"' for element in line) for line in partial_db)
 
     return partial_csv

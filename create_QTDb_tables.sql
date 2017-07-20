@@ -1,6 +1,6 @@
 /* 
 deltaQT Database - table creation and loading queries
-Updated March 28, 2017
+Updated July 18, 2017
 
 Copyright (C) 2017, Tatonetti Lab
 Tal Lorberbaum <tal.lorberbaum@columbia.edu>
@@ -44,6 +44,8 @@ CREATE TABLE `Patient` (
   `pre_qt_500` int(1) NOT NULL DEFAULT '0',
   `post_qt_500` int(1) NOT NULL DEFAULT '0',
   `delta_qt` int(11) NOT NULL,
+  `electrolyte_imbalance` int(1) NOT NULL DEFAULT '0',
+  `cardiac_comorbidity` int(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`pt_id_era`),
   KEY `pt_id` (`pt_id`,`era`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;

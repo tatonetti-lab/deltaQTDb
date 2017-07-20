@@ -1,5 +1,5 @@
 """
-deltaQT Database creation script, Updated March 28, 2017
+deltaQT Database creation script v1.1, Updated July 18, 2017
 
 Copyright (C) 2017, Tatonetti Lab
 Tal Lorberbaum <tal.lorberbaum@columbia.edu>
@@ -27,14 +27,19 @@ import csv
 from tqdm import tqdm
 
 # Define table names
-CONFIG_FILE = ""  # log-in credentials for database
-OMOP_CDM_DB = ""  # local OMOP CDM MySQL database
-DRUG_ERA = ""     # local OMOP CDM DRUG_ERA table
-CONCEPT  = ""     # local OMOP CDM CONCEPT table
-PERSON   = ""     # local OMOP CDM PERSON table
-ECG_QTC  = ""     # local ECG table (see line 146)
+CONFIG_FILE = ""          # log-in credentials for database
+OMOP_CDM_DB = ""          # local OMOP CDM MySQL database
+DRUG_ERA = ""             # local OMOP CDM DRUG_ERA table
+CONCEPT  = ""             # local OMOP CDM CONCEPT table
+PERSON   = ""             # local OMOP CDM PERSON table
+CONDITION_OCCURRENCE = "" # local OMOP CDM CONDITION_OCCURRENCE table
+PROCEDURE_OCCURRENCE = "" # local OMOP CDM PROCEDURE_OCCURRENCE table
+OBSERVATION = ""          # local OMOP CDM OBSERVATION table
+ECG_QTC  = ""             # local ECG table (see line 146)
 
 print "Creating deltaQT Database..."
+
+
 
 # Connect to MySQL database
 print "Connecting to database"
@@ -233,6 +238,228 @@ for pt in tqdm(pt2ecg_era):
 
 
 
+# Get covariates of interest (electrolyte imbalance, cardiac co-morbidities)
+SQL = '''select distinct person_source_value, condition_start_date as dx_date
+        from {CONDITION_OCCURRENCE}
+        join {PERSON} using (person_id)
+        join {DRUG_ERA} de using (person_id)
+        where condition_concept_id = {HYPO_DX}
+        
+        union
+
+        select distinct person_source_value, observation_date as dx_date
+        #,value_as_number as val,units_source_value as units
+        from {OBSERVATION}
+        join {PERSON} using (person_id)
+        join {DRUG_ERA} using (person_id)
+        where observation_source_value = "{LAB_ID}"
+        and units_source_value = "{LAB_UNITS}"
+        and value_as_number < {LAB_THRESHOLD}'''
+
+
+# Hypokalemia (Dx, abnormal K lab, prescribed K)
+hypo_k_dx = 437833 # hypokalemia ICD-9: 276.8
+
+k_lab_id = "2823-3" # Potassium [Moles/volume] in Serum or Plasma (mmol/L)
+k_lab_units = "mM/l"
+k_lab_threshold = 3.5 # http://www.merckmanuals.com/professional/endocrine-and-metabolic-disorders/electrolyte-disorders/hypokalemia
+
+k_rx = [19049105] #Potassium Chloride
+
+pt2hypo_k = defaultdict(set)
+
+cur.execute( SQL.format(CONDITION_OCCURRENCE=CONDITION_OCCURRENCE,
+                        PERSON=PERSON, DRUG_ERA=DRUG_ERA, OBSERVATION=OBSERVATION,
+                         HYPO_DX= hypo_k_dx,
+                         LAB_ID= k_lab_id,
+                         LAB_UNITS= k_lab_units,
+                         LAB_THRESHOLD= k_lab_threshold) )
+
+print "Finding hypokalemia diagnoses and labs"
+results = cur.fetchall()
+for person_id, dx_date in tqdm(results):
+    if person_id in pt2baseline:
+        pt2hypo_k[person_id].add(dx_date)
+# print len(pt2hypo_k)
+
+print "Finding potassium prescriptions"
+for person_id in tqdm(pt2baseline.keys()):
+    for drug_concept_id in k_rx:
+        if drug_concept_id in pt2era[person_id]:
+            for (start_date, end_date) in pt2era[person_id][drug_concept_id]:
+                pt2hypo_k[person_id].add(start_date)
+
+print len(pt2hypo_k), "patients with potassium imbalance"
+
+
+# Hypomagnesemia (Dx, abnormal Mg lab, prescribed Mg)
+hypo_mg_dx = 438725 # hypomagnesemia ICD-9: 275.2
+
+mg_lab_id = "19123-9" # Magnesium [Mass/volume] in Serum or Plasma (mg/dL)
+mg_lab_units = "mg/dl"
+mg_lab_threshold = 1.8 # http://www.merckmanuals.com/professional/endocrine-and-metabolic-disorders/electrolyte-disorders/hypomagnesemia
+
+# Magnesium Rx given for hypomagnesemia
+mg_rx = [#992956,   # Magnesium Hydroxide (laxative)
+         19093848, # Magnesium Sulfate
+         993631,   # Magnesium Oxide
+         19067971] # Magnesium Gluconate
+
+pt2hypo_mg = defaultdict(set)
+
+cur.execute( SQL.format(CONDITION_OCCURRENCE=CONDITION_OCCURRENCE,
+                        PERSON=PERSON, DRUG_ERA=DRUG_ERA, OBSERVATION=OBSERVATION,
+                         HYPO_DX= hypo_mg_dx,
+                         LAB_ID= mg_lab_id,
+                         LAB_UNITS= mg_lab_units,
+                         LAB_THRESHOLD= mg_lab_threshold) )
+
+print "Finding hypomagnesemia diagnoses and labs"
+results = cur.fetchall()
+for person_id, dx_date in tqdm(results):
+    if person_id in pt2baseline:
+        pt2hypo_mg[person_id].add(dx_date)
+
+print "Finding magnesium prescriptions"
+for person_id in tqdm(pt2baseline.keys()):
+    for drug_concept_id in mg_rx:
+        if drug_concept_id in pt2era[person_id]:
+            for (start_date, end_date) in pt2era[person_id][drug_concept_id]:
+                pt2hypo_mg[person_id].add(start_date)
+
+print len(pt2hypo_mg), "patients with magnesium imbalance"
+
+
+# Cardiac co-morbidities (collect first Dx per patient to use for "history of/ up to 36d post-maxECG")
+print "Finding cardiac co-morbidities:"
+
+pt2cardiac_cov = dict()
+
+cov2dx_concept_id = {
+    'afib': [313217], #Atrial fibrillation, 427.31
+    'conduction_disorder': [ # includes heart block
+        4108240, # Conduction disorders unspecified, 426
+        320744, # Complete atrioventricular block, 426.0
+        316135, # AVB - Atrioventricular block, 426.10
+        314379, # First degree atrioventricular block, 426.11
+        313780, # Mobitz type 2 second degree atrioventricular block, 426.12
+        318448, # Incomplete atrioventricular block, second degree, 426.13
+        313209, # Left bundle branch hemiblock, 426.2
+        316998, # Left bundle branch block, 426.3
+        314059, # Right bundle branch block, 426.4
+        313791, # Bundle branch block, 426.50
+        321590, # Right bundle branch block AND left posterior fascicular block, 426.51
+        316432, # Right bundle branch block AND left anterior fascicular block, 426.52
+        321587, # Bilateral bundle branch block, 426.53
+        321315, # Trifascicular block, 426.54
+        320425, # Heart block, 426.6
+        313224, # Anomalous atrioventricular excitation, 426.7
+        437892, # Lown-Ganong-Levine syndrome, 426.81
+        316999, # Cardiac arrhythmia, 426.9 & 426.89
+        ],  
+    'premature_complex': [316429], # Premature complex, 427.69
+    'heart_failure': [139036, 141038, 316139, 319835, 439846, 442310, 443580, 443587, 444031, 40479192], # Heart failure, 428.*
+    'myocardial_infarct': [312327, 438438, 4267568, 434376, 438447, 441579, 438170, 4051874, 436706, 439693, 444406, 4303359, 4329847], # Acute myocardial infarction, 410.*
+    'left_ventr_hypertrophy': [314658], # Cardiomegaly, 429.3
+    'structural_heart_disease': [
+        434467, # Ostium secundum type atrial septal defect, 745.5
+        435912, # Endocardial cushion defect, 745.60
+        76798, # Ostium primum defect, 745.61
+        435912, # Endocardial cushion defect, 745.69
+        321119, # Coarctation of aorta, 747.10
+        ],
+    }
+
+SQL = '''select distinct person_source_value, condition_start_date as dx_date
+        from {CONDITION_OCCURRENCE}
+        join {PERSON} using (person_id)
+        join {DRUG_ERA} de using (person_id)
+        where condition_concept_id {CARDIAC_DX}'''
+
+for cov in cov2dx_concept_id.keys():
+    pt2cardiac_cov[cov] = defaultdict(set)
+    
+    print "\t",cov,
+    if len(cov2dx_concept_id[cov]) > 1:
+        cur.execute(SQL.format(CONDITION_OCCURRENCE=CONDITION_OCCURRENCE,
+                            PERSON=PERSON, DRUG_ERA=DRUG_ERA,
+                             CARDIAC_DX= "in %s" %str(tuple(cov2dx_concept_id[cov])) ) )
+    else:
+        cur.execute(SQL.format(CONDITION_OCCURRENCE=CONDITION_OCCURRENCE,
+                            PERSON=PERSON, DRUG_ERA=DRUG_ERA,
+                             CARDIAC_DX= "= %s" %str(cov2dx_concept_id[cov][0]) ) )
+    
+    results = cur.fetchall()
+    for person_id, dx_date in results:
+        if person_id in pt2baseline:
+            pt2cardiac_cov[cov][person_id].add(dx_date)
+    print len(pt2cardiac_cov[cov]), "patients"
+
+
+# Paced rhythm (procedure)
+cov2proc_concept_id = {
+    'paced_rhythm': [
+        2001973, # Insertion of permanent pacemaker, initial or replacement, type of device not specified, 37.80
+        2001974, # Initial insertion of single-chamber device, not specified as rate responsive, 37.81
+        2001975, # Initial insertion of single-chamber device, rate responsive, 37.82
+        2001976, # Initial insertion of dual-chamber device, 37.83
+        2001977, # Replacement of any type pacemaker device with single-chamber device, not specified as rate responsive, 37.85
+        2001978, # Replacement of any type of pacemaker device with single-chamber device, rate responsive, 37.86
+        2001979, # Replacement of any type pacemaker device with dual-chamber device, 37.87
+        2001980, # Revision or removal of pacemaker device, 37.89
+        ]
+}
+
+SQL = '''select distinct person_source_value, procedure_date as dx_date
+        from {PROCEDURE_OCCURRENCE}
+        join {PERSON} using (person_id)
+        join {DRUG_ERA} de using (person_id)
+        where procedure_concept_id {CARDIAC_DX}'''
+
+for cov in cov2proc_concept_id.keys():
+    pt2cardiac_cov[cov] = defaultdict(set)
+    
+    print "\t",cov,
+    if len(cov2proc_concept_id[cov]) > 1:
+        cur.execute(SQL.format(PROCEDURE_OCCURRENCE=PROCEDURE_OCCURRENCE,
+                            PERSON=PERSON, DRUG_ERA=DRUG_ERA,
+                             CARDIAC_DX= "in %s" %str(tuple(cov2proc_concept_id[cov])) ) )
+    else:
+        cur.execute(SQL.format(PROCEDURE_OCCURRENCE=PROCEDURE_OCCURRENCE,
+                            PERSON=PERSON, DRUG_ERA=DRUG_ERA,
+                             CARDIAC_DX= "= %s" %str(cov2proc_concept_id[cov][0]) ) )
+    
+    results = cur.fetchall()
+    for person_id, dx_date in results:
+        if person_id in pt2baseline:
+            pt2cardiac_cov[cov][person_id].add(dx_date)
+    print len(pt2cardiac_cov[cov]), "patients"
+
+
+# Bradycardia
+print "\tbradycardia",
+pt2cardiac_cov["bradycardia"] = defaultdict(set)
+
+bradycardia_threshold = 60
+SQL = '''select distinct mrn, date(datetime), bpm
+        from {ECG_QTC} qt
+        join {PERSON} p on (p.person_source_value = qt.mrn)
+        where qtc >= 360 and qtc <= 800
+        and bpm < {BRADYCARDIA_THRESHOLD}
+        and mrn in (select distinct person_source_value
+                    from {PERSON}
+                    join {DRUG_ERA} using (person_id))
+        and mrn != 0
+        order by mrn,datetime'''.format(ECG_QTC=ECG_QTC, PERSON=PERSON, DRUG_ERA=DRUG_ERA,
+                                        BRADYCARDIA_THRESHOLD=bradycardia_threshold)
+cur.execute(SQL)
+results = cur.fetchall()
+for person_id, bradycardia_date, bpm in results:
+    pt2cardiac_cov['bradycardia'][person_id].add(bradycardia_date)
+print len(pt2cardiac_cov['bradycardia']), "patients"
+
+
+
 # Collect drug exposures leading up to max(ecgdate,qtc)
 print "Collecting drug exposures leading up to maxECG date in ECG era"
 pt2qtdb = dict()
@@ -339,8 +566,8 @@ for swap_drug in tqdm(drug2num_swap.keys()):
     
     # Randomly choose `num_swap` eras to swap without replacement
     pt_w_drug_to_remove_arr = np.array(list(pt_w_drug_to_remove))
-    idx = np.random.choice(len(pt_w_drug_to_remove_arr), size=num_swap, replace=False)
-    eras_to_remove[swap_drug] = list(map(tuple, pt_w_drug_to_remove_arr[idx]))
+    idx = np.random.choice(len(pt_w_drug_to_remove_arr), size=num_swap, replace=False) # http://stackoverflow.com/a/23446047
+    eras_to_remove[swap_drug] = list(map(tuple, pt_w_drug_to_remove_arr[idx])) # http://stackoverflow.com/a/10016379
     
     pt_wo_drug_to_add_arr = np.array(list( pt_wo_drug_to_add ))
     idx = np.random.choice(len(pt_wo_drug_to_add_arr), size=num_swap, replace=False)
@@ -369,6 +596,7 @@ for person_id in tqdm(pt2qtdb.keys()):
                 pt2qtdb_swap[person_id][pt_era_orig,post_ecg_date,pre_qt,post_qt].append( (drug, "swap","swap") )
 
 
+
 # Function for randomly adjusting age +/- 0-5 years
 def shuffle_age(ecg_date,bday,prev_age=None):
     age = int( (ecg_date-bday).days/365.25 )
@@ -392,6 +620,7 @@ def shuffle_age(ecg_date,bday,prev_age=None):
     return shuffled_age
 
 
+
 # Save drugs to csv
 print "Done! Saving database to csv"
 outf = open('qtdb_Drug.csv', 'w')
@@ -407,7 +636,8 @@ outf.close()
 # Save QTDb to csv
 outf_dem = open('qtdb_Patient.csv','w')
 writer_dem = csv.writer(outf_dem)
-writer_dem.writerow(['pt_id_era', 'pt_id', 'era', 'age', 'sex', 'race', 'num_drugs', 'pre_qt_500', 'post_qt_500', 'delta_qt'])
+writer_dem.writerow(['pt_id_era', 'pt_id', 'era', 'age', 'sex', 'race', 'num_drugs', 'pre_qt_500', 'post_qt_500', 'delta_qt',
+                     'electrolyte_imbalance', 'cardiac_comorbidity'])
 
 outf_drug = open('qtdb_Patient2Drug.csv','w')
 writer_drug = csv.writer(outf_drug)
@@ -415,7 +645,8 @@ writer_drug.writerow(['pt_id_era', 'drug_concept_id'])
 
 outf_anon = open('qtdb.csv','w')
 writer_anon = csv.writer(outf_anon)
-writer_anon.writerow(['pt_id_era', 'pt_id', 'era', 'age', 'sex', 'race', 'num_drugs', 'drug_concept_id', 'drug_name', 'pre_qt_500', 'post_qt_500', 'delta_qt'])
+writer_anon.writerow(['pt_id_era', 'pt_id', 'era', 'age', 'sex', 'race', 'num_drugs', 'drug_concept_id', 'drug_name', 'pre_qt_500', 'post_qt_500', 'delta_qt',
+                      'electrolyte_imbalance', 'cardiac_comorbidity'])
 
 pt_list = [pt for pt in pt2qtdb_swap.keys() if len(pt2qtdb_swap[pt]) != 0]
 random.shuffle(pt_list)
@@ -428,10 +659,53 @@ for i,person_id in tqdm(enumerate(pt_list), total=len(pt_list)):
         
         prev_age = pt_age
         
+        
+        # ----------        
+        # Check for electrolyte imbalance up to 36d before/ after maxECG date
+        k_imbalance = 0
+        mg_imbalance = 0
+        any_electrolyte_imbalance = 0
+        
+        for hypo_k_date in pt2hypo_k[person_id]:
+            if abs(post_ecg_date-hypo_k_date).days <= 36:
+                k_imbalance = 1
+        
+        for hypo_mg_date in pt2hypo_mg[person_id]:
+            if abs(post_ecg_date-hypo_mg_date).days <= 36:
+                mg_imbalance = 1
+        
+        
+        # Check for history of cardiac co-morbidity (any time before up to 36d after maxECG date)
+        cardiac_comorbidities = defaultdict(int)
+        any_cardiac_comorbidity = 0
+        
+        for cov in pt2cardiac_cov:
+            if person_id in pt2cardiac_cov[cov]:
+                for cov_date in pt2cardiac_cov[cov][person_id]:
+                    if (cov_date-post_ecg_date).days <= 36:
+                        cardiac_comorbidities[cov] = 1
+        
+        if len(cardiac_comorbidities) > 0:
+            any_cardiac_comorbidity = 1
+
+        # print cardiac_comorbidities, len(cardiac_comorbidities)
+        # print post_ecg_date, k_imbalance, mg_imbalance, any_electrolyte_imbalance, any_cardiac_comorbidity
+        # ----------        
+        
+        
         drug_set = set()
         for (drug_concept_id, drug_start_date,drug_end_date) in pt2qtdb_swap[person_id][pt_era_orig,post_ecg_date,pre_qt,post_qt]:
             drug_set.add(drug_concept_id)
+            
+            # Check for k_rx or mg_rx (in cases of swap)
+            if drug_concept_id in k_rx:
+                k_imbalance = 1
+            if drug_concept_id in mg_rx:
+                mg_imbalance = 1
         num_drugs = len(drug_set)
+        
+        if k_imbalance+mg_imbalance > 0:  ###
+            any_electrolyte_imbalance = 1
         
         pre_qt_500 = 0
         post_qt_500 = 0
@@ -440,14 +714,16 @@ for i,person_id in tqdm(enumerate(pt_list), total=len(pt_list)):
         if post_qt >= 500:
             post_qt_500 = 1
         
-        writer_dem.writerow(['%d_%d' %(i+1,pt_era), i+1, pt_era, pt_age, pt2sex[person_id], pt2race[person_id], num_drugs, pre_qt_500, post_qt_500, post_qt-pre_qt])
+        writer_dem.writerow(['%d_%d' %(i+1,pt_era), i+1, pt_era, pt_age, pt2sex[person_id], pt2race[person_id], num_drugs, pre_qt_500, post_qt_500, post_qt-pre_qt,
+                             any_electrolyte_imbalance, any_cardiac_comorbidity])
         
         for drug_concept_id in drug_set:
             writer_drug.writerow(['%d_%d' %(i+1,pt_era), drug_concept_id])
-            
+                                   
             writer_anon.writerow(['%d_%d' %(i+1,pt_era), i+1, pt_era, pt_age, pt2sex[person_id], pt2race[person_id], num_drugs, 
                                   drug_concept_id, drug2name[drug_concept_id],
-                                  pre_qt_500, post_qt_500, post_qt-pre_qt])
+                                  pre_qt_500, post_qt_500, post_qt-pre_qt,
+                                  any_electrolyte_imbalance, any_cardiac_comorbidity])
         
 outf_dem.close()
 outf_drug.close()
@@ -458,3 +734,96 @@ outf_anon.close()
 cur.close()
 con.close()
 
+
+
+# Save db to files (GLOBAL) NO SWAP
+pt2shuffled_age = dict()
+
+outf_dem = open('qtdb_Patient_noswap.csv','w')
+writer_dem = csv.writer(outf_dem)
+writer_dem.writerow(['pt_id_era', 'pt_id', 'era', 'age', 'sex', 'race', 'num_drugs', 'pre_qt_500', 'post_qt_500', 'delta_qt',
+                     'electrolyte_imbalance', 'cardiac_comorbidity'])
+
+outf_drug = open('qtdb_Patient2Drug_noswap.csv','w')
+writer_drug = csv.writer(outf_drug)
+writer_drug.writerow(['pt_id_era', 'drug_concept_id'])
+
+outf_anon = open('qtdb_noswap.csv','w')
+writer_anon = csv.writer(outf_anon)
+writer_anon.writerow(['pt_id_era', 'pt_id', 'era', 'age', 'sex', 'race', 'num_drugs', 'drug_concept_id', 'drug_name', 'pre_qt_500', 'post_qt_500', 'delta_qt',
+                      'electrolyte_imbalance', 'cardiac_comorbidity'])
+
+pt_list = [pt for pt in pt2qtdb.keys() if len(pt2qtdb[pt]) != 0]
+random.shuffle(pt_list)
+for i,person_id in tqdm(enumerate(pt_list), total=len(pt_list)):
+    pt_era = 0
+    prev_age = None
+    for pt_era_orig,post_ecg_date,pre_qt,post_qt in pt2qtdb[person_id]:
+        pt_era += 1
+        pt_age = shuffle_age(post_ecg_date, pt2bday[person_id], prev_age)
+        pt2shuffled_age[(person_id,pt_era_orig)] = pt_age
+        
+        prev_age = pt_age
+        
+
+        # ----------        
+        # Check for electrolyte imbalance up to 36d before/ after maxECG date
+        k_imbalance = 0
+        mg_imbalance = 0
+        any_electrolyte_imbalance = 0
+        
+        for hypo_k_date in pt2hypo_k[person_id]:
+            if abs(post_ecg_date-hypo_k_date).days <= 36:
+                k_imbalance = 1
+        
+        for hypo_mg_date in pt2hypo_mg[person_id]:
+            if abs(post_ecg_date-hypo_mg_date).days <= 36:
+                mg_imbalance = 1
+
+        if k_imbalance+mg_imbalance > 0:  ###
+            any_electrolyte_imbalance = 1
+        
+        # Check for history of cardiac co-morbidity (any time before up to 36d after maxECG date)
+        cardiac_comorbidities = defaultdict(int)
+        any_cardiac_comorbidity = 0
+        
+        for cov in pt2cardiac_cov:
+            if person_id in pt2cardiac_cov[cov]:
+                for cov_date in pt2cardiac_cov[cov][person_id]:
+                    if (cov_date-post_ecg_date).days <= 36:
+                        cardiac_comorbidities[cov] = 1
+        
+        if len(cardiac_comorbidities) > 0:
+            any_cardiac_comorbidity = 1
+
+        # print cardiac_comorbidities, len(cardiac_comorbidities)
+        # print post_ecg_date, k_imbalance, mg_imbalance, any_electrolyte_imbalance, any_cardiac_comorbidity
+        # ----------
+
+
+        drug_set = set()
+        for (drug_concept_id, drug_start_date,drug_end_date) in pt2qtdb[person_id][pt_era_orig,post_ecg_date,pre_qt,post_qt]:
+            drug_set.add(drug_concept_id)
+        num_drugs = len(drug_set)
+        
+        pre_qt_500 = 0
+        post_qt_500 = 0
+        if pre_qt >= 500:
+            pre_qt_500 = 1
+        if post_qt >= 500:
+            post_qt_500 = 1
+        
+        writer_dem.writerow(['%d_%d' %(i+1,pt_era), i+1, pt_era, pt_age, pt2sex[person_id], pt2race[person_id], num_drugs, pre_qt_500, post_qt_500, post_qt-pre_qt,
+                             any_electrolyte_imbalance, any_cardiac_comorbidity])
+        
+        for drug_concept_id in drug_set:
+            writer_drug.writerow(['%d_%d' %(i+1,pt_era), drug_concept_id])
+            
+            writer_anon.writerow(['%d_%d' %(i+1,pt_era), i+1, pt_era, pt_age, pt2sex[person_id], pt2race[person_id], num_drugs, 
+                                  drug_concept_id, drug2name[drug_concept_id],
+                                  pre_qt_500, post_qt_500, post_qt-pre_qt,
+                                  any_electrolyte_imbalance, any_cardiac_comorbidity])
+        
+outf_dem.close()
+outf_drug.close()
+outf_anon.close()

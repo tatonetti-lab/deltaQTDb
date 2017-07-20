@@ -1,4 +1,4 @@
-<!-- deltaQT Database - Home Page, Updated March 28,2017 
+<!-- deltaQT Database - Home Page, Updated July 18, 2017 
 
 Copyright (C) 2017, Tatonetti Lab
 Tal Lorberbaum <tal.lorberbaum@columbia.edu>
@@ -45,7 +45,7 @@ http://creativecommons.org/licenses/by-nc-sa/4.0/
             
             <div style="clear:both"><img src="/index/img/qt-web-download-subset.svg" style="height:30px;vertical-align:middle;" />&nbsp;<a class="jslink" id="download-partial-db" style="vertical-align:middle;">Download selected data</a>&nbsp;<img src="/index/img/loading-csv.svg" style="vertical-align:middle; display:none" width="25px" id="loading-csv-icon"/></div>
             
-            <div style="clear:both;"><img src="/index/img/qt-web-download.svg" style="height:30px;vertical-align:middle;" />&nbsp;<a href="/index/csv/qtdb.csv" id="download-whole-db" style="vertical-align:middle;">Download entire database</a></div>
+            <div style="clear:both;"><img src="/index/img/qt-web-download.svg" style="height:30px;vertical-align:middle;" />&nbsp;<a href="/index/static/qtdb.csv" id="download-whole-db" style="vertical-align:middle;">Download entire database</a></div>
             
             <a class="anchor" id="download"></a>
             <div style="display:none;" id="downloadInfo">
@@ -61,6 +61,8 @@ http://creativecommons.org/licenses/by-nc-sa/4.0/
                   <li><span class="code">pre_qt_500</span>: &nbsp;value of 1 indicates baseline QTc interval ≥ 500 ms</li>
                   <li><span class="code">post_qt_500</span>: value of 1 indicates post-drug exposure QTc interval ≥ 500 ms</li>
                   <li><span class="code">delta_qt</span>: change in QTc interval from baseline to post-drug exposure (ms)</li>
+                  <li><span class="code">electrolyte_imbalance</span>: value of 1 indicates patient experienced hypokalemia and/ or hypomagnesemia up to 36 days before/ after post-exposure ECG</li>
+                  <li><span class="code">cardiac_comorbidity</span>: value of 1 indicates patient experienced atrial fibrillation, heart failure, myocardial infarction, left ventricular hypertrophy, structural heart disease, bradycardia, paced rhythms, premature complexes, and/ or conduction disorders (other than long QT syndrome) any time before and up to 36 days after post-exposure ECG</li>
                 </ul>
             </div>
             
@@ -75,7 +77,8 @@ http://creativecommons.org/licenses/by-nc-sa/4.0/
         </div>
     </div>
   
-<script src="http://d3js.org/d3.v4.min.js"></script>
+<!--<script src="http://d3js.org/d3.v4.min.js"></script>-->
+<script src="/index/js/d3.min.js"></script>
     
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/6.22.1/babel.js"></script>
 

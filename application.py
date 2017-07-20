@@ -1,5 +1,5 @@
 """
-deltaQT Database - Application, Updated March 28, 2017
+deltaQT Database - Application, Updated July 18, 2017
 
 Copyright (C) 2017, Tatonetti Lab
 Tal Lorberbaum <tal.lorberbaum@columbia.edu>
@@ -31,6 +31,10 @@ def index():
 def faq():
     return static_file("faq.html", root='')
 
+@route('/example_use')
+def example_use():
+    return static_file("example_use.html", root='')
+
 @route('/index/css/<cssfile>')
 def static_css(cssfile):
     return static_file(cssfile, root='index/css/')
@@ -47,9 +51,9 @@ def static_font(fontfile):
 def static_js(jsfile):
     return static_file(jsfile, root='index/js/')
 
-@route('/index/csv/<csvfile>')
-def static_csv(csvfile):
-    return static_file(csvfile, root='index/csv/')
+@route('/index/static/<staticfile>')
+def static_download(staticfile):
+    return static_file(staticfile, root='index/static/')
 
 @route('/api/v1/query')
 def api_call():

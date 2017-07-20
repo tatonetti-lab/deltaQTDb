@@ -1,0 +1,9 @@
+@import url("style.css");
+
+/*@page { size: landscape; }*/
+
+h1, img, p, a {display: none;}
+
+.description {display: none;}
+
+div.Select, div.checkbox-list, div.download-links {display: none;}

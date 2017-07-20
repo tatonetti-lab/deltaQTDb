@@ -1,5 +1,5 @@
 """
-deltaQT Database - Query Database, Updated March 28, 2017
+deltaQT Database - Query Database, Updated July 18, 2017
 
 Copyright (C) 2017, Tatonetti Lab
 Tal Lorberbaum <tal.lorberbaum@columbia.edu>
@@ -34,7 +34,8 @@ def query_db(drugs,cache=False):
         else:
             drug_select = '='
 
-        SQL = '''select pm.pt_id_era, pm.pt_id, pm.age, pm.sex, pm.race, pm.num_drugs, pm.pre_qt_500, pm.post_qt_500, pm.delta_qt
+        SQL = '''select pm.pt_id_era, pm.pt_id, pm.age, pm.sex, pm.race, pm.num_drugs, pm.pre_qt_500, pm.post_qt_500, pm.delta_qt,
+pm.electrolyte_imbalance, pm.cardiac_comorbidity
 from qtdb.Patient{suffix} pm
 join
     (select pt_id, 
@@ -45,7 +46,8 @@ join
 
 
     else:
-        SQL = '''select pm.pt_id_era, pm.pt_id, pm.age, pm.sex, pm.race, pm.num_drugs, pm.pre_qt_500, pm.post_qt_500, pm.delta_qt
+        SQL = '''select pm.pt_id_era, pm.pt_id, pm.age, pm.sex, pm.race, pm.num_drugs, pm.pre_qt_500, pm.post_qt_500, pm.delta_qt,
+pm.electrolyte_imbalance, pm.cardiac_comorbidity
 from qtdb.Patient{suffix} pm
 join
     (select pt_id, 
@@ -88,7 +90,8 @@ and pm.delta_qt = m.max_delta;'''
         pt_ids_seen.add(result['pt_id'])
         delta_qts.append({"delta": result['delta_qt'], "age": result['age'], "sex": str(result['sex']),
                           "race": str(result['race']), "num_drugs": result['num_drugs'],
-                          "pre_qt_500": result['pre_qt_500'], "post_qt_500": result['post_qt_500']})
+                          "pre_qt_500": result['pre_qt_500'], "post_qt_500": result['post_qt_500'],
+                          "electrolyte_imbalance": result['electrolyte_imbalance'], "cardiac_comorbidity": result['cardiac_comorbidity'] })
         
 
 
@@ -98,7 +101,8 @@ and pm.delta_qt = m.max_delta;'''
         else:
             drug_select = '='
 
-        SQL = '''select pm.pt_id_era, pm.pt_id, pm.age, pm.sex, pm.race, pm.num_drugs, pm.pre_qt_500, pm.post_qt_500, pm.delta_qt
+        SQL = '''select pm.pt_id_era, pm.pt_id, pm.age, pm.sex, pm.race, pm.num_drugs, pm.pre_qt_500, pm.post_qt_500, pm.delta_qt,
+pm.electrolyte_imbalance, pm.cardiac_comorbidity
 from qtdb.Patient{suffix} pm
 join
     (select pt_id, 
@@ -126,7 +130,8 @@ join
             pt_ids_seen.add(result['pt_id'])
             delta_qts_cache.append({"delta": result['delta_qt'], "age": result['age'], "sex": str(result['sex']),
                                     "race": str(result['race']), "num_drugs": result['num_drugs'],
-                                    "pre_qt_500": result['pre_qt_500'], "post_qt_500": result['post_qt_500']})
+                                    "pre_qt_500": result['pre_qt_500'], "post_qt_500": result['post_qt_500'],
+                                    "electrolyte_imbalance": result['electrolyte_imbalance'], "cardiac_comorbidity": result['cardiac_comorbidity'] })
         
 
     cur.close()

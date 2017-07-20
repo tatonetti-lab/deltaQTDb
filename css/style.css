@@ -1,0 +1,140 @@
+@font-face {
+    font-family: helneue;
+    src: url(../fonts/HelveticaNeueLTCom-MdEx.ttf) format('truetype');
+}
+
+@font-face {
+    font-family: lmroman;
+    src: url(../fonts/lmroman10-regular-webfont.ttf)
+}
+
+@font-face {
+    font-family: lmroman;
+    src: url(../fonts/lmroman10-bold-webfont.ttf);
+    font-weight: 700
+}
+
+@font-face {
+    font-family: lmroman;
+    src: url(../fonts/lmroman10-italic-webfont.ttf);
+    font-style: italic
+}
+
+@font-face {
+    font-family: lmroman;
+    src: url(../fonts/lmroman10-bolditalic-webfont.ttf);
+    font-weight: 700;
+    font-style: italic
+}
+
+body {
+    font-family: lmroman;
+    font-size: 0.8em;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: stretch;
+}
+
+.left {
+    order: 1;
+    background: red;
+    flex-basis: 100%;
+    height: 300px
+}
+
+.dashboard {
+    order: 1;
+    background: #fff;
+    flex-basis: 100%;
+    padding: 25px;
+    padding-top: 10px;
+    font-size: 1.3em;
+}
+
+.description {
+    order: 2;
+    background: #f0f0f0;
+    flex-basis: 100%;
+    padding: 25px;
+    padding-top: 0px;
+    font-size: 1.1em;
+}
+
+@media screen and (min-width:968px) {
+    .container {
+        flex-wrap: nowrap;
+    }
+    .dashboard {
+        flex-basis: 1;
+        order: 1;
+    }
+    .description {
+        flex-basis: 600px;
+        order: 2;
+    }
+}
+
+a {
+    text-decoration:none;
+}
+a:hover { text-decoration: underline; } a:active { text-decoration: underline; } a:visited { color: blue; }
+
+a.anchor{ position: relative; visibility: hidden; }
+
+p {
+  text-align: justify;
+}
+
+.code {
+    font-family: Courier, lmroman;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+/* styles for d3.js */
+
+#histogram {
+    max-width: 600px;
+    max-height: 400px;
+    width:100%;
+    font-size:.5em;
+}
+
+
+/* Bar */
+
+.background {
+    fill: grey;
+    opacity: 0.5;
+  }
+
+.overlay {
+    fill: steelblue;
+    opacity: 0.6;
+}
+
+.overlay:hover {
+    fill: steelblue;
+    opacity: 0.8;
+}
+
+.bar_overlay text {
+  fill: #000;
+  font: 8px sans-serif;
+}
+
+.bar text {
+  fill: #999;
+  font: 9px sans-serif;
+}
