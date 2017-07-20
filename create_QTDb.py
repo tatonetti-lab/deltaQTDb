@@ -35,7 +35,7 @@ PERSON   = ""             # local OMOP CDM PERSON table
 CONDITION_OCCURRENCE = "" # local OMOP CDM CONDITION_OCCURRENCE table
 PROCEDURE_OCCURRENCE = "" # local OMOP CDM PROCEDURE_OCCURRENCE table
 OBSERVATION = ""          # local OMOP CDM OBSERVATION table
-ECG_QTC  = ""             # local ECG table (see line 146)
+ECG_QTC  = ""             # local ECG table (see line 151)
 
 print "Creating deltaQT Database..."
 
