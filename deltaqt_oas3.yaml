@@ -1,0 +1,53 @@
+openapi: 3.0.0
+servers:
+  - url: 'http://www.deltaqt.org/api/v1'
+info:
+  description: |
+    ∆QTDb (delta QT Database) is a resource for exploring the effects of one or more drugs on the QT interval. It has been built from a deidentified subset of electrocardiogram and drug exposure data at Columbia University Medical Center.
+    
+    For information on how the database was develeoped see the [Frequently Asked Questions](http://deltaqt.org/faq).
+  version: 1.0.0
+  title: ∆QTDb API
+  termsOfService: 'https://github.com/tal-baum/deltaQTDb'
+  contact:
+    email: nick.tatonetti@columbia.edu
+  license:
+    name: Creative Commons BY-NC-SA 4.0
+    url: 'http://creativecommons.org/licenses/by-nc-sa/4.0/'
+tags:
+  - name: translator
+    x-id: http://ncats.nih.gov/translator/
+  - name: Adverse Drug Reaction Reporting Systems
+    x-id: http://purl.bioontology.org/ontology/MESH/D016907
+  - name: drug
+  - name: clinical data
+paths:
+  /query:
+    get:
+      summary: ''
+      description: ''
+      parameters:
+        - name: drugs
+          in: query
+          required: true
+          schema:
+            type: string
+          description: One or more drug identifiers. For example use 1309944 for amiodarone.
+      operationId: query
+      responses:
+        default:
+          description: Default response
+externalDocs:
+  description: ''
+  url: 'http://deltaqt.org'
+components:
+  schemas: {}
+  responses: {}
+  parameters: {}
+  examples: {}
+  requestBodies: {}
+  securitySchemes: {}
+  headers: {}
+  links: {}
+  callbacks: {}
+security: []
