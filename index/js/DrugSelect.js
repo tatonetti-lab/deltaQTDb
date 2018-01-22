@@ -27,7 +27,12 @@ class DrugSelect extends React.Component {
             males: this.props.males, //true,
             females: this.props.females, //true,
             loadingIconStyle: {float:"right", display:"none"},
-            numPatients: ''
+            numPatients: '',
+            labUsed: [],
+            labOptions: [
+                { value: 'Lab One', label: 'Lab One' },
+                { value: 'Lab Two', label: 'Lab Two' },
+              ]
 		};
 	}
 
@@ -36,7 +41,11 @@ class DrugSelect extends React.Component {
         
 		this.setState({ value
         }, () => { this.callAPI(); } );              
-	}
+    }
+    
+    handleLabChange (value) {
+        console.log(value);
+    }
 
     callAPI () {
         this.setState( {loadingIconStyle: {float:"right", display:"", "margin-right": "25px"}} );
@@ -136,6 +145,13 @@ class DrugSelect extends React.Component {
         
         return (
 			<div className="section">
+                <Select multi simpleValue name="selected-lab" joinValues
+                 value={this.state.labUsed}
+                 placeholder="Select lab..."
+                 noResultsText="Lab not found" 
+                 options={this.state.labOptions}
+                 onChange={this.handleLabChange} />
+
 				<Select multi simpleValue name="selected-drugs" joinValues
                  value={this.state.value}
                  placeholder="Select drug(s)..."
