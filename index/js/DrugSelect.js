@@ -20,6 +20,7 @@ class DrugSelect extends React.Component {
         this.callAPI = this.callAPI.bind(this);
         this.toggleMales = this.toggleMales.bind(this);
         this.toggleFemales = this.toggleFemales.bind(this);
+        this.handleLabChange = this.handleLabChange.bind(this);
 		this.state = {
 			options: drugs,
 			value: [],
@@ -45,6 +46,10 @@ class DrugSelect extends React.Component {
     
     handleLabChange (value) {
         console.log(value);
+        this.setState({
+            labUsed: value
+        })
+
     }
 
     callAPI () {
@@ -145,7 +150,8 @@ class DrugSelect extends React.Component {
         
         return (
 			<div className="section">
-                <Select multi simpleValue name="selected-lab" joinValues
+                <Select className='selected-lab'
+                 multi simpleValue name="selected-lab" joinValues
                  value={this.state.labUsed}
                  placeholder="Select lab..."
                  noResultsText="Lab not found" 
