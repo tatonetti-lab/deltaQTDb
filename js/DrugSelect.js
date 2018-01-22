@@ -27,7 +27,8 @@ class DrugSelect extends React.Component {
             males: this.props.males, //true,
             females: this.props.females, //true,
             loadingIconStyle: {float:"right", display:"none"},
-            numPatients: ''
+            numPatients: '',
+            labUsed: ''
 		};
 	}
 
@@ -136,6 +137,13 @@ class DrugSelect extends React.Component {
         
         return (
 			<div className="section">
+                <Select multi simpleValue name="selected-lab" joinValues
+                 value={this.state.value}
+                 placeholder="Select drug(s)..."
+                 noResultsText="Drug not found" 
+                 options={this.state.options}
+                 onChange={this.handleSelectChange} />
+                 
 				<Select multi simpleValue name="selected-drugs" joinValues
                  value={this.state.value}
                  placeholder="Select drug(s)..."
