@@ -13,30 +13,44 @@
 
 var request = null;
 class DrugSelect extends React.Component {
-	displayName: 'DrugSelect';
-	constructor (props) {
+    displayName: 'DrugSelect';
+    constructor (props) {
         super(props);
         this.handleSelectChange = this.handleSelectChange.bind(this);
         this.callAPI = this.callAPI.bind(this);
         this.toggleMales = this.toggleMales.bind(this);
         this.toggleFemales = this.toggleFemales.bind(this);
-		this.state = {
-			options: drugs,
-			value: [],
+        this.handleLabChange = this.handleLabChange.bind(this);
+        this.state = {
+            options: drugs,
+            value: [],
             deltas: this.props.deltas,
             males: this.props.males, //true,
             females: this.props.females, //true,
             loadingIconStyle: {float:"right", display:"none"},
-            numPatients: ''
-		};
-	}
+            numPatients: '',
+            labUsed: [],
+            labOptions: [
+                { value: 'Lab One', label: 'Lab One' },
+                { value: 'Lab Two', label: 'Lab Two' },
+              ]
+        };
+    }
 
-	handleSelectChange (value) {
+    handleSelectChange (value) {
 //		debug('You\'ve selected:', value);    
         
-		this.setState({ value
+        this.setState({ value
         }, () => { this.callAPI(); } );              
-	}
+    }
+    
+    handleLabChange (value) {
+        console.log(value);
+        this.setState({
+            labUsed: value
+        })
+
+    }
 
     callAPI () {
         this.setState( {loadingIconStyle: {float:"right", display:"", "margin-right": "25px"}} );
@@ -120,43 +134,51 @@ class DrugSelect extends React.Component {
 //	}
     
     toggleMales () {
-		this.setState({
-			males: !this.state.males // http://stackoverflow.com/a/40408976
+        this.setState({
+            males: !this.state.males // http://stackoverflow.com/a/40408976
         }, () => { this.props.onSexChange(this.state.males, this.state.females); } );
-	}
+    }
     toggleFemales () {
-		this.setState({
-			females: !this.state.females
-		}, () => { this.props.onSexChange(this.state.males, this.state.females); } );
-	}
+        this.setState({
+            females: !this.state.females
+        }, () => { this.props.onSexChange(this.state.males, this.state.females); } );
+    }
     
     // Loading svg from http://cezarywojtkowski.com/react-loading/
-	render () {
+    render () {
         var numPtsStyle = {float:"right"};
         
         return (
-			<div className="section">
-				<Select multi simpleValue name="selected-drugs" joinValues
+            <div className="section">
+                <Select className='selected-lab'
+                 multi simpleValue name="selected-lab" joinValues
+                 value={this.state.labUsed}
+                 placeholder="Select lab..."
+                 noResultsText="Lab not found" 
+                 options={this.state.labOptions}
+                 onChange={this.handleLabChange} />
+
+                <Select multi simpleValue name="selected-drugs" joinValues
                  value={this.state.value}
                  placeholder="Select drug(s)..."
                  noResultsText="Drug not found" 
                  options={this.state.options}
                  onChange={this.handleSelectChange} />
 
-				<div className="checkbox-list">
-					<label className="checkbox-inline">
-						<input type="checkbox" className="checkbox-control" checked={this.state.males} onChange={this.toggleMales} />
-						<span className="checkbox-label">Males</span>
-					</label>
+                <div className="checkbox-list">
+                    <label className="checkbox-inline">
+                        <input type="checkbox" className="checkbox-control" checked={this.state.males} onChange={this.toggleMales} />
+                        <span className="checkbox-label">Males</span>
+                    </label>
                     {' '}
-					<label className="checkbox-inline">
-						<input type="checkbox" className="checkbox-control" checked={this.state.females} onChange={this.toggleFemales} />
-						<span className="checkbox-label">Females</span>
-					</label>
+                    <label className="checkbox-inline">
+                        <input type="checkbox" className="checkbox-control" checked={this.state.females} onChange={this.toggleFemales} />
+                        <span className="checkbox-label">Females</span>
+                    </label>
                     <div style={this.state.loadingIconStyle}><img src={"/index/img/loading.svg"} height="18px"/></div>
                     <div style={numPtsStyle}>{this.state.numPatients}</div>
-				</div>
-			</div>
-		);
-	}
+                </div>
+            </div>
+        );
+    }
 }
